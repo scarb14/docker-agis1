@@ -1,0 +1,48 @@
+version: '3'
+services:
+    web:
+        image: nginx:alpine
+        volumes:
+            - ./etc/nginx/default.conf:/etc/nginx/conf.d/default.conf:cached
+            - ./etc/ssl:/etc/ssl:cached
+            - /Users/gbalovnev/Projects/agis1:/var/www/html:cached
+            - ./etc/nginx/default.template.conf:/etc/nginx/conf.d/default.template:cached
+        ports:
+            - "80:80"
+            - "443:443"
+        environment:
+            - NGINX_HOST=${NGINX_HOST}
+        command: /bin/sh -c "envsubst '$$NGINX_HOST' < /etc/nginx/conf.d/default.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
+        restart: always
+        depends_on:
+            - php
+            - mysql
+    php:
+        image: nanoninja/php-fpm:${PHP_VERSION}
+        restart: always
+        volumes:
+            - ./etc/php/php.ini:/usr/local/etc/php/conf.d/php.ini:cached
+            - /Users/gbalovnev/Projects/agis1:/var/www/html:cached
+    mysql:
+        image: mysql:${MYSQL_VERSION}
+        container_name: ${MYSQL_HOST}
+        restart: always
+        env_file:
+            - ".env"
+        environment:
+            - MYSQL_DATABASE=${MYSQL_DATABASE}
+            - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+            - MYSQL_USER=${MYSQL_USER}
+            - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+        ports:
+            - "3306:3306"
+        volumes:
+            - ./data/db/mysql:/var/lib/mysql:cached
+    redis:
+         image: redis
+         restart: always
+         volumes:
+            - ./storage/redis/data:/data:cached
+         ports:
+            - 6363:6379
+            
